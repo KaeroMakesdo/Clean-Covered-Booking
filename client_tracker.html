@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>C&C Client Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --green:#1f5c1f;--green2:#2d7d2d;--green-light:#e6f4e6;
+  --gold:#c89b3c;--gold-light:#fdf3dc;
+  --blue:#1a5fa8;--blue-light:#e8f1fb;
+  --red:#a32d2d;--red-light:#fcebeb;
+  --bg:#f4f7f4;--card:#ffffff;--border:#dde8dd;
+  --text:#1a2a1a;--muted:#5a7a5a;--subtle:#8aaa8a;
+  --radius:16px;--radius-sm:10px;
+  --shadow:0 2px 12px rgba(0,0,0,.06);
+}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+.shell{max-width:430px;margin:0 auto;background:var(--bg);min-height:100vh;display:flex;flex-direction:column}
+
+/* HEADER */
+.header{background:var(--green);padding:20px 18px 16px;color:#fff}
+.header-row{display:flex;justify-content:space-between;align-items:center}
+.logo{font-size:18px;font-weight:700;letter-spacing:-.3px}
+.logo span{opacity:.7;font-weight:400}
+.date-badge{font-size:11px;background:rgba(255,255,255,.15);border-radius:99px;padding:4px 10px;font-family:'DM Mono',monospace}
+.stats-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:14px}
+.stat{background:rgba(255,255,255,.1);border-radius:10px;padding:10px;text-align:center}
+.stat-n{font-size:20px;font-weight:700;font-family:'DM Mono',monospace}
+.stat-l{font-size:10px;opacity:.75;margin-top:1px}
+
+/* NAV */
+.nav{display:flex;gap:4px;padding:10px 12px;background:var(--card);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:20;overflow-x:auto;scrollbar-width:none}
+.nav::-webkit-scrollbar{display:none}
+.nav-btn{flex-shrink:0;padding:7px 14px;border-radius:99px;font-size:13px;font-weight:500;border:1.5px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;transition:all .15s;white-space:nowrap;font-family:'DM Sans',sans-serif}
+.nav-btn.active{background:var(--green);color:#fff;border-color:var(--green)}
+.nav-btn:hover:not(.active){border-color:var(--green2);color:var(--green)}
+
+/* CONTENT */
+.content{flex:1;padding:14px}
+.section{display:none}.section.active{display:block}
+
+/* CARDS */
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:10px;box-shadow:var(--shadow)}
+.card-title{font-size:14px;font-weight:700;margin-bottom:12px;color:var(--text)}
+
+/* FORM */
+.form-group{margin-bottom:10px}
+.form-label{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;display:block}
+.form-input{width:100%;padding:10px 12px;border-radius:var(--radius-sm);border:1.5px solid var(--border);font-size:14px;font-family:'DM Sans',sans-serif;outline:none;background:var(--bg);color:var(--text);transition:border .15s}
+.form-input:focus{border-color:var(--green2)}
+select.form-input{cursor:pointer}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.submit-btn{width:100%;padding:12px;background:var(--green);color:#fff;border:none;border-radius:var(--radius-sm);font-size:14px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;margin-top:4px;transition:background .15s}
+.submit-btn:hover{background:#173d17}
+
+/* CLIENT CARDS */
+.client-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:8px;box-shadow:var(--shadow)}
+.client-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px}
+.client-name{font-size:15px;font-weight:700}
+.client-address{font-size:12px;color:var(--muted);margin-top:1px}
+.client-badges{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px}
+.badge{font-size:11px;font-weight:600;padding:3px 8px;border-radius:99px}
+.badge-green{background:var(--green-light);color:var(--green)}
+.badge-blue{background:var(--blue-light);color:var(--blue)}
+.badge-gold{background:var(--gold-light);color:#7a5a10}
+.badge-red{background:var(--red-light);color:var(--red)}
+.badge-gray{background:#f0f0f0;color:#555}
+.client-meta{display:flex;gap:10px;font-size:12px;color:var(--muted);flex-wrap:wrap}
+.client-meta span{display:flex;align-items:center;gap:3px}
+.client-actions{display:flex;gap:6px;margin-top:10px}
+.action-btn{flex:1;padding:7px;border-radius:var(--radius-sm);font-size:12px;font-weight:600;cursor:pointer;border:1.5px solid;font-family:'DM Sans',sans-serif;transition:all .15s;text-align:center}
+.btn-done{background:var(--green-light);color:var(--green);border-color:#b8ddb8}
+.btn-done:hover{background:#d0ecd0}
+.btn-paid{background:var(--blue-light);color:var(--blue);border-color:#b5d0f0}
+.btn-paid:hover{background:#d0e4f8}
+.btn-delete{background:var(--red-light);color:var(--red);border-color:#f09595}
+.btn-delete:hover{background:#f8d8d8}
+.btn-call{background:var(--green);color:#fff;border-color:var(--green)}
+.btn-call:hover{background:#173d17}
+
+/* SCHEDULE */
+.day-section{margin-bottom:16px}
+.day-header{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);padding:6px 0;border-bottom:1px solid var(--border);margin-bottom:8px;display:flex;justify-content:space-between}
+.day-count{background:var(--green-light);color:var(--green);border-radius:99px;padding:1px 7px;font-size:10px}
+.schedule-item{display:flex;gap:10px;align-items:center;background:var(--card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 12px;margin-bottom:6px;box-shadow:var(--shadow)}
+.schedule-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.schedule-info{flex:1}
+.schedule-name{font-size:13px;font-weight:600}
+.schedule-svc{font-size:11px;color:var(--muted);margin-top:1px}
+.schedule-price{font-size:13px;font-weight:700;color:var(--green);white-space:nowrap}
+.schedule-done{opacity:.5;text-decoration:line-through}
+
+/* EARNINGS */
+.earnings-big{text-align:center;padding:20px 0 10px}
+.earnings-num{font-size:42px;font-weight:700;color:var(--green);font-family:'DM Mono',monospace}
+.earnings-label{font-size:13px;color:var(--muted);margin-top:4px}
+.earnings-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
+.earnings-stat{background:var(--card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px;text-align:center}
+.earnings-stat-n{font-size:20px;font-weight:700;font-family:'DM Mono',monospace}
+.earnings-stat-l{font-size:11px;color:var(--muted);margin-top:2px}
+.earnings-stat.green .earnings-stat-n{color:var(--green)}
+.earnings-stat.blue .earnings-stat-n{color:var(--blue)}
+.earnings-stat.gold .earnings-stat-n{color:var(--gold)}
+.earnings-stat.red .earnings-stat-n{color:var(--red)}
+.payment-item{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border);font-size:13px}
+.payment-item:last-child{border-bottom:none}
+.payment-name{font-weight:500}
+.payment-detail{font-size:11px;color:var(--muted);margin-top:1px}
+.payment-amount{font-weight:700;color:var(--green)}
+.payment-amount.unpaid{color:var(--red)}
+
+/* EMPTY STATE */
+.empty{text-align:center;padding:40px 20px;color:var(--muted)}
+.empty-icon{font-size:36px;margin-bottom:10px}
+.empty-title{font-size:15px;font-weight:600;margin-bottom:4px;color:var(--text)}
+.empty-body{font-size:13px;line-height:1.5}
+
+/* TOAST */
+.toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%) translateY(20px);background:#1a2a1a;color:#fff;padding:10px 18px;border-radius:99px;font-size:13px;font-weight:500;opacity:0;transition:all .3s;z-index:100;white-space:nowrap}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <div class="header">
+    <div class="header-row">
+      <div class="logo">C&C <span>Client Tracker</span></div>
+      <div class="date-badge" id="today-date"></div>
+    </div>
+    <div class="stats-row">
+      <div class="stat"><div class="stat-n" id="h-clients">0</div><div class="stat-l">Clients</div></div>
+      <div class="stat"><div class="stat-n" id="h-today">0</div><div class="stat-l">Today</div></div>
+      <div class="stat"><div class="stat-n" id="h-earned">$0</div><div class="stat-l">Earned</div></div>
+    </div>
+  </div>
+
+  <div class="nav">
+    <button class="nav-btn active" onclick="show('schedule',this)">📅 Schedule</button>
+    <button class="nav-btn" onclick="show('clients',this)">👥 Clients</button>
+    <button class="nav-btn" onclick="show('add',this)">➕ Add client</button>
+    <button class="nav-btn" onclick="show('earnings',this)">💰 Earnings</button>
+  </div>
+
+  <div class="content">
+
+    <!-- SCHEDULE -->
+    <div class="section active" id="sec-schedule">
+      <div id="schedule-wrap"></div>
+    </div>
+
+    <!-- CLIENTS -->
+    <div class="section" id="sec-clients">
+      <div id="clients-wrap"></div>
+    </div>
+
+    <!-- ADD CLIENT -->
+    <div class="section" id="sec-add">
+      <div class="card">
+        <div class="card-title">Add new client</div>
+        <div class="form-group">
+          <label class="form-label">Full name</label>
+          <input class="form-input" type="text" id="f-name" placeholder="e.g. John Smith">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Phone number</label>
+          <input class="form-input" type="tel" id="f-phone" placeholder="e.g. 719-555-0100">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Address</label>
+          <input class="form-input" type="text" id="f-address" placeholder="e.g. 123 Main St">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Service</label>
+          <select class="form-input" id="f-service">
+            <option>Lawn mowing</option>
+            <option>Leaf removal</option>
+            <option>Hedge & shrub trimming</option>
+            <option>Mulching & garden beds</option>
+            <option>Gutter cleaning</option>
+            <option>Snow removal</option>
+            <option>Salt & de-icing</option>
+            <option>Trash bin cleaning</option>
+            <option>Other</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Day</label>
+            <select class="form-input" id="f-day">
+              <option>Monday</option>
+              <option>Tuesday</option>
+              <option>Wednesday</option>
+              <option>Thursday</option>
+              <option>Friday</option>
+              <option>Saturday</option>
+              <option>Sunday</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Frequency</label>
+            <select class="form-input" id="f-freq">
+              <option>One-time</option>
+              <option>Weekly</option>
+              <option>Biweekly</option>
+              <option>Monthly</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Price ($)</label>
+            <input class="form-input" type="number" id="f-price" placeholder="e.g. 45">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Customer type</label>
+            <select class="form-input" id="f-type">
+              <option>First-time</option>
+              <option>Returning</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Notes (optional)</label>
+          <input class="form-input" type="text" id="f-notes" placeholder="e.g. gate code 1234, big dog">
+        </div>
+        <button class="submit-btn" onclick="addClient()">Add client</button>
+      </div>
+    </div>
+
+    <!-- EARNINGS -->
+    <div class="section" id="sec-earnings">
+      <div class="card">
+        <div class="earnings-big">
+          <div class="earnings-num" id="e-total">$0</div>
+          <div class="earnings-label">Total earned (paid jobs)</div>
+        </div>
+        <div class="earnings-grid">
+          <div class="earnings-stat green"><div class="earnings-stat-n" id="e-paid">0</div><div class="earnings-stat-l">Jobs paid</div></div>
+          <div class="earnings-stat red"><div class="earnings-stat-n" id="e-unpaid">0</div><div class="earnings-stat-l">Unpaid</div></div>
+          <div class="earnings-stat blue"><div class="earnings-stat-n" id="e-done">0</div><div class="earnings-stat-l">Jobs done</div></div>
+          <div class="earnings-stat gold"><div class="earnings-stat-n" id="e-clients">0</div><div class="earnings-stat-l">Total clients</div></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Payment status</div>
+        <div id="payments-wrap"></div>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const DAYS = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+const DAY_COLORS = {Monday:'#2d7d2d',Tuesday:'#1a5fa8',Wednesday:'#c89b3c',Thursday:'#9b2d2d',Friday:'#5a2d9b',Saturday:'#1f5c1f',Sunday:'#7a5a10'};
+
+let clients = JSON.parse(localStorage.getItem('cc_clients') || '[]');
+
+function save(){ localStorage.setItem('cc_clients', JSON.stringify(clients)); }
+
+function toast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 2500);
+}
+
+function show(id, btn){
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('sec-'+id).classList.add('active');
+  if(btn) btn.classList.add('active');
+  if(id==='schedule') renderSchedule();
+  if(id==='clients') renderClients();
+  if(id==='earnings') renderEarnings();
+}
+
+function addClient(){
+  const name = document.getElementById('f-name').value.trim();
+  if(!name){ toast('Please enter a name'); return; }
+  const client = {
+    id: Date.now(),
+    name,
+    phone: document.getElementById('f-phone').value.trim(),
+    address: document.getElementById('f-address').value.trim(),
+    service: document.getElementById('f-service').value,
+    day: document.getElementById('f-day').value,
+    freq: document.getElementById('f-freq').value,
+    price: parseFloat(document.getElementById('f-price').value) || 0,
+    type: document.getElementById('f-type').value,
+    notes: document.getElementById('f-notes').value.trim(),
+    done: false,
+    paid: false,
+    added: new Date().toLocaleDateString()
+  };
+  clients.push(client);
+  save();
+  updateHeader();
+  toast('✓ ' + name + ' added!');
+  document.getElementById('f-name').value='';
+  document.getElementById('f-phone').value='';
+  document.getElementById('f-address').value='';
+  document.getElementById('f-price').value='';
+  document.getElementById('f-notes').value='';
+}
+
+function deleteClient(id){
+  if(!confirm('Remove this client?')) return;
+  clients = clients.filter(c=>c.id!==id);
+  save();
+  updateHeader();
+  renderClients();
+  renderSchedule();
+  renderEarnings();
+  toast('Client removed');
+}
+
+function toggleDone(id){
+  const c = clients.find(c=>c.id===id);
+  if(c){ c.done=!c.done; save(); updateHeader(); renderClients(); renderSchedule(); renderEarnings(); toast(c.done?'✓ Marked as done':'Marked as not done'); }
+}
+
+function togglePaid(id){
+  const c = clients.find(c=>c.id===id);
+  if(c){ c.paid=!c.paid; save(); updateHeader(); renderClients(); renderEarnings(); toast(c.paid?'💰 Marked as paid':'Marked as unpaid'); }
+}
+
+function updateHeader(){
+  const today = DAYS[new Date().getDay()];
+  document.getElementById('h-clients').textContent = clients.length;
+  document.getElementById('h-today').textContent = clients.filter(c=>c.day===today).length;
+  const earned = clients.filter(c=>c.paid).reduce((s,c)=>s+c.price,0);
+  document.getElementById('h-earned').textContent = '$'+Math.round(earned);
+  const d = new Date();
+  document.getElementById('today-date').textContent = d.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
+}
+
+function renderSchedule(){
+  const wrap = document.getElementById('schedule-wrap');
+  if(clients.length===0){
+    wrap.innerHTML = `<div class="empty"><div class="empty-icon">📅</div><div class="empty-title">No clients yet</div><div class="empty-body">Add your first client and they'll appear here organized by day.</div></div>`;
+    return;
+  }
+  const today = DAYS[new Date().getDay()];
+  const order = [...DAYS.slice(new Date().getDay()), ...DAYS.slice(0,new Date().getDay())];
+  let html = '';
+  order.forEach(day=>{
+    const dayClients = clients.filter(c=>c.day===day);
+    if(dayClients.length===0) return;
+    const isToday = day===today;
+    html += `<div class="day-section">
+      <div class="day-header">
+        <span>${isToday?'📍 Today — ':''}<strong>${day}</strong></span>
+        <span class="day-count">${dayClients.length} job${dayClients.length>1?'s':''}</span>
+      </div>`;
+    dayClients.forEach(c=>{
+      html += `<div class="schedule-item ${c.done?'schedule-done':''}">
+        <div class="schedule-dot" style="background:${DAY_COLORS[day]||'#666'}"></div>
+        <div class="schedule-info">
+          <div class="schedule-name">${c.name}</div>
+          <div class="schedule-svc">${c.service} · ${c.freq}${c.address?' · '+c.address:''}</div>
+        </div>
+        <div>
+          <div class="schedule-price">$${c.price}</div>
+          ${c.paid?'<div style="font-size:10px;color:var(--green);text-align:right;margin-top:2px">Paid ✓</div>':''}
+          ${c.done&&!c.paid?'<div style="font-size:10px;color:var(--red);text-align:right;margin-top:2px">Unpaid</div>':''}
+        </div>
+      </div>`;
+    });
+    html += '</div>';
+  });
+  wrap.innerHTML = html;
+}
+
+function renderClients(){
+  const wrap = document.getElementById('clients-wrap');
+  if(clients.length===0){
+    wrap.innerHTML = `<div class="empty"><div class="empty-icon">👥</div><div class="empty-title">No clients yet</div><div class="empty-body">Tap "Add client" to add your first customer.</div></div>`;
+    return;
+  }
+  wrap.innerHTML = clients.map(c=>`
+    <div class="client-card">
+      <div class="client-top">
+        <div>
+          <div class="client-name">${c.name}</div>
+          ${c.address?`<div class="client-address">📍 ${c.address}</div>`:''}
+        </div>
+      </div>
+      <div class="client-badges">
+        <span class="badge badge-green">${c.service}</span>
+        <span class="badge badge-blue">${c.day} · ${c.freq}</span>
+        <span class="badge ${c.type==='First-time'?'badge-gold':'badge-gray'}">${c.type}</span>
+        ${c.done?'<span class="badge badge-green">Done ✓</span>':''}
+        ${c.paid?'<span class="badge badge-blue">Paid 💰</span>':''}
+      </div>
+      <div class="client-meta">
+        <span>💵 $${c.price}</span>
+        ${c.phone?`<span>📞 ${c.phone}</span>`:''}
+        ${c.notes?`<span>📝 ${c.notes}</span>`:''}
+        <span>Added ${c.added}</span>
+      </div>
+      <div class="client-actions">
+        ${c.phone?`<a class="action-btn btn-call" href="tel:${c.phone.replace(/\D/g,'')}">📞 Call</a>`:''}
+        <button class="action-btn btn-done" onclick="toggleDone(${c.id})">${c.done?'↩ Undo':'✓ Done'}</button>
+        <button class="action-btn btn-paid" onclick="togglePaid(${c.id})">${c.paid?'↩ Unpaid':'💰 Paid'}</button>
+        <button class="action-btn btn-delete" onclick="deleteClient(${c.id})">🗑</button>
+      </div>
+    </div>`).join('');
+}
+
+function renderEarnings(){
+  const paid = clients.filter(c=>c.paid);
+  const unpaid = clients.filter(c=>c.done&&!c.paid);
+  const total = paid.reduce((s,c)=>s+c.price,0);
+  document.getElementById('e-total').textContent = '$'+Math.round(total);
+  document.getElementById('e-paid').textContent = paid.length;
+  document.getElementById('e-unpaid').textContent = unpaid.length;
+  document.getElementById('e-done').textContent = clients.filter(c=>c.done).length;
+  document.getElementById('e-clients').textContent = clients.length;
+  const wrap = document.getElementById('payments-wrap');
+  if(clients.length===0){
+    wrap.innerHTML = `<div style="text-align:center;padding:20px;color:var(--muted);font-size:13px">No clients yet</div>`;
+    return;
+  }
+  const sorted = [...clients].sort((a,b)=>b.done-a.done);
+  wrap.innerHTML = sorted.map(c=>`
+    <div class="payment-item">
+      <div>
+        <div class="payment-name">${c.name}</div>
+        <div class="payment-detail">${c.service} · ${c.day}${c.done?' · Done ✓':' · Upcoming'}</div>
+      </div>
+      <div class="payment-amount ${c.paid?'':'unpaid'}">$${c.price} ${c.paid?'✓':'⏳'}</div>
+    </div>`).join('');
+}
+
+updateHeader();
+renderSchedule();
+</script>
+</body>
+</html>
